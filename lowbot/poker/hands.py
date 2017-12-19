@@ -1,5 +1,4 @@
 from lowbot.poker.deck import *
-import numpy as np
 import operator
 
 class Hand(object):
@@ -8,6 +7,14 @@ class Hand(object):
         self.Cards = cards
         self.Cards.sort(key=lambda x: (x.Value, x.Suit), reverse=True)
         self.HandValue = self._get_hand_value()
+        self.Discarded = []
+
+    def draw(self, indices, cards):
+        for e, i in enumerate(indices):
+            self.Discarded.append(self.Cards[i])
+            self.Cards[i] = cards[e]
+
+        self.Cards.sort(key=lambda x: (x.Value, x.Suit), reverse=True)
 
     def to_string(self):
         s = ""
@@ -73,24 +80,24 @@ class Hand(object):
         return sorted(buckets.items(), key=operator.itemgetter(1))
 
     def _is_royal_flush(self):
-        if len(self.Cards) < 5 or self.Cards[0].value != 12:
+        if len(self.Cards) < 5 or self.Cards[0].Value != 12:
             return None
 
         for i in range(1, 5):
-            if self.Cards[i].value != self.Cards[i-1].value - 1 or self.Cards[i].suit != self.Cards[i-1].suit:
+            if self.Cards[i].Value != self.Cards[i-1].Value - 1 or self.Cards[i].Suit != self.Cards[i-1].Suit:
                 return None
 
-        return [10, self.Cards[0].suit]
+        return [10, self.Cards[0].Suit]
 
     def _is_straight_flush(self):
         if len(self.Cards) < 5:
             return None
 
         for i in range(1, 5):
-            if self.Cards[i].value != self.Cards[i-1].value - 1 or self.Cards[i].suit != self.Cards[i-1].suit:
+            if self.Cards[i].Value != self.Cards[i-1].Value - 1 or self.Cards[i].Suit != self.Cards[i-1].Suit:
                 return None
 
-        return [9, self.Cards[0].value, self.Cards[0].suit]
+        return [9, self.Cards[0].Value, self.Cards[0].Suit]
 
     def is_four_of_a_kind(self):
 
@@ -113,20 +120,20 @@ class Hand(object):
             return None
 
         for i in range(1, 5):
-            if self.Cards[i].suit != self.Cards[i-1].suit:
+            if self.Cards[i].Suit != self.Cards[i-1].Suit:
                 return None
 
-        return [6, self.Cards[0].value, self.Cards[0].suit]
+        return [6, self.Cards[0].Value, self.Cards[0].Suit]
 
     def _is_straight(self):
         if len(self.Cards) < 5:
             return None
 
         for i in range(1, 5):
-            if self.Cards[i].value != self.Cards[i-1].value - 1:
+            if self.Cards[i].Value != self.Cards[i-1].Value - 1:
                 return None
 
-        return [5, self.Cards[0].value]
+        return [5, self.Cards[0].Value]
 
     def _is_three_of_a_kind(self):
 
@@ -177,3 +184,5 @@ class Hand(object):
         for c in self.Cards:
             rank.append(c.Value)
         return rank
+
+

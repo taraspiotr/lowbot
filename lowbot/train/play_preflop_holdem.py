@@ -63,7 +63,7 @@ def cfr(cards, history, ai_strategy, position, playerHand, oppHand):
     action = ""
 
     if player == position:
-        action = getAction(1)#input("Select an action [p/b]: ")
+        action = input("Select an action [p/b]: ")
         print("Player plays {0}".format(action))
     else:
         action = getAction(ai_strategy[infoSet])
