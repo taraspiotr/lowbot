@@ -1,6 +1,7 @@
 from lowbot.poker.deck import *
 from lowbot.poker.hands import Hand
 
+
 DRAW = 100
 TERMINAL = 111
 ONGOING = 112
@@ -25,6 +26,11 @@ class Game(object):
 
         self._deal_cards(hand_size)
 
+    def get_current_player(self):
+        last_round = self.History.split("-")[-1]
+        plays = len(''.join(i for i in last_round if not i.isdigit()))
+        player = 1 - (plays % 2)
+        return player
 
     def get_winner(self):
         return self.Winner
@@ -32,7 +38,7 @@ class Game(object):
     def perform_action(self, action, indices=None):
 
         last_round = self.History.split("-")[-1]
-        plays = len(last_round)
+        plays = len(''.join(i for i in last_round if not i.isdigit()))
         player = 1 - (plays % 2)
 
         if action == "f":
@@ -71,7 +77,7 @@ class Game(object):
         # WARNING: ONLY WORK PROPERLY WHEN TRIGGERED AFTER ACTION
 
         last_round = self.History.split("-")[-1]
-        plays = len(last_round)
+        plays = len(''.join(i for i in last_round if not i.isdigit()))
         player = 1 - (plays % 2)
         old_state = self.State
 
@@ -88,11 +94,21 @@ class Game(object):
 
             elif plays > 1:
                 if last_round[-1] == "c":
-                    if self.DrawCount < self.NumDraws:
-                        self.State = DRAW
+                    if plays == 2 and self.DrawCount == 0:
+                        self.State = ONGOING
                     else:
-                        self.State = TERMINAL
-                        self.Winner = player
+                        if self.DrawCount < self.NumDraws:
+                            self.State = DRAW
+                        else:
+                            self.State = TERMINAL
+                            better_hand = self.Hands[player].compare(self.Hands[1-player])
+                            if better_hand == 1:
+                                self.Winner = player
+                            elif better_hand == -1:
+                                self.Winner = 1 - player
+                            else:
+                                self.Winner = 2
+
                 elif last_round[-1] == "r":
                     if last_round.count("r") < self.Cap:
                         self.State = ONGOING

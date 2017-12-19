@@ -1,17 +1,3 @@
 
-
-class Klasa(object):
-
-    def __init__(self):
-        self.s = "k"
-
-
-
-def fun(obiekt):
-
-    obiekt.s = "dafasdf"
-
-
-o = Klasa()
-fun(o)
-print(o.s)
+a = filter(lambda x: x.isalpha(), "asdf4as3d2fa1sdf")
+print(a.__next__())
