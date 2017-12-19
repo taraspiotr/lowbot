@@ -1,6 +1,5 @@
-import time
-import progressbar
-import numpy as np
+from lowbot.poker.deck import *
+from lowbot.poker.hands import Hand
 
 
 class KuhnTrainer(object):
@@ -23,6 +22,7 @@ class KuhnTrainer(object):
             self.regretSum = np.zeros(self.NUM_ACTIONS)
             self.strategy = np.zeros(self.NUM_ACTIONS)
             self.strategySum = np.zeros(self.NUM_ACTIONS)
+            self.counter = 1
 
         def getStrategy(self, realizationWeight):
             normalizingSum = 0
@@ -57,50 +57,56 @@ class KuhnTrainer(object):
             return avgStrategy
 
         def toString(self):
-            return str.format("{0}:   \t[{1:.0f}%  \t{2:.0f}%]", self.infoSet, self.getAverageStrategy()[0]*100, self.getAverageStrategy()[1]*100)
+            return str.format("{0} ({1}):\t[{2:.0f}%\t{3:.0f}%]", self.infoSet, self.counter, self.getAverageStrategy()[0]*100, self.getAverageStrategy()[1]*100)
+
+        def toCSV(self):
+            return str.format("{0}, {1}", self.infoSet, self.getAverageStrategy()[0])
 
     def train(self, iterations):
-        cards = [i for i in range(13)]
+        cards = Deck()
         util = 0.
 
-        bar = progressbar.ProgressBar(maxval=iterations, \
-                                      widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
-        bar.start()
 
         for i in range(iterations):
-            cards = np.random.permutation(cards)
+            cards.shuffle()
             util += self.cfr(cards, "", 1, 1)
-            bar.update(i + 1)
+            print("Iteration {0} / {1}".format(i, iterations))
 
         print("Average game value: {0}, after {1} iterations.".format(util / iterations, iterations))
 
-        for n in self.nodeMap.values():
-            print(n.to_string())
+        with open("strategy.csv", "w") as f:
+            for n in self.nodeMap.values():
+                print(n.toString())
+                f.write(n.toCSV() + "\n")
 
 
     def cfr(self, cards, history, p0, p1):
         plays = len(history)
         player = plays % 2
         opponent = 1 - player
+        hands = [Hand(cards.Cards[0:2]), Hand(cards.Cards[2:4])]
+        playerHand = hands[player]
+        oppHand = hands[opponent]
 
         if plays > 1:
             terminalPass = history[plays - 1] == 'p'
             doubleBet = history.endswith("bb")
-            isPlayerCardHigher = cards[player] > cards[opponent]
+            isPlayerCardHigher = playerHand.compare(oppHand)
 
             if terminalPass:
                 if history == "pp":
-                    return 1 if isPlayerCardHigher else -1
+                    return isPlayerCardHigher
                 else:
                     return 1
             elif doubleBet:
-                return 2 if isPlayerCardHigher else -2
+                return 2*isPlayerCardHigher
 
-        infoSet = str(cards[player]) + history
+        infoSet = str(playerHand.to_string_simplified()) + history
 
         node = None
         if infoSet in self.nodeMap.keys():
             node = self.nodeMap[infoSet]
+            self.nodeMap[infoSet].counter += 1
         else:
             node = self.createNode()
             node.infoSet = infoSet
@@ -124,5 +130,5 @@ class KuhnTrainer(object):
     def main(self):
         self.train(self.iterations)
 
-Trainer = KuhnTrainer(1000000)
+Trainer = KuhnTrainer(100000)
 Trainer.main()

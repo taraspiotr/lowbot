@@ -1,173 +1,179 @@
-from poker.deck import *
+from lowbot.poker.deck import *
 import numpy as np
 import operator
 
-class hand(object):
+class Hand(object):
 
     def __init__(self, cards):
-        self.cards = cards
-        self.cards.sort(key=lambda x: (x.value, x.suit), reverse=True)
-        self.handValue = self.getHandValue()
+        self.Cards = cards
+        self.Cards.sort(key=lambda x: (x.Value, x.Suit), reverse=True)
+        self.HandValue = self._get_hand_value()
 
-    def toString(self):
+    def to_string(self):
         s = ""
-        for c in self.cards:
-            s += c.toString() + ' '
+        for c in self.Cards:
+            s += c.to_string() + ' '
         return s[0:len(s)-1]
 
-    def compare(self, secondHand):
-        for i in range(min(len(self.handValue), len(secondHand.handValue))):
-            if self.handValue[i] > secondHand.handValue[i]:
+    def to_string_simplified(self):
+        s = ""
+        for c in self.Cards:
+            s += c.to_string_simplified()
+        return s
+
+    def compare(self, second_hand):
+        for i in range(min(len(self.HandValue), len(second_hand.HandValue))):
+            if self.HandValue[i] > second_hand.HandValue[i]:
                 return 1
-            elif self.handValue[i] < secondHand.handValue[i]:
+            elif self.HandValue[i] < second_hand.HandValue[i]:
                 return -1
         return 0
 
-    def getHandValue(self):
+    def _get_hand_value(self):
 
-        rank = self.isRoyalFlush(self.cards)
+        rank = self._is_royal_flush()
         if rank:
             return rank
-        rank = self.isStraightFlush(self.cards)
+        rank = self._is_straight_flush()
         if rank:
             return rank
-        rank = self.isFourOfAKind(self.cards)
+        rank = self.is_four_of_a_kind()
         if rank:
             return rank
-        rank = self.isFullHouse(self.cards)
+        rank = self._is_full_house()
         if rank:
             return rank
-        rank = self.isFlush(self.cards)
+        rank = self._is_flush()
         if rank:
             return rank
-        rank = self.isStraight(self.cards)
+        rank = self._is_straight()
         if rank:
             return rank
-        rank = self.isThreeOfAKind(self.cards)
+        rank = self._is_three_of_a_kind()
         if rank:
             return rank
-        rank = self.isTwoPair(self.cards)
+        rank = self._is_two_pair()
         if rank:
             return rank
-        rank = self.isPair(self.cards)
+        rank = self._is_pair()
         if rank:
             return rank
-        rank = self.isHighCard(self.cards)
+        rank = self._is_high_card()
         if rank:
             return rank
 
         return None
 
-    def bucketCards(self, cards):
+    def _bucket_cards(self):
         buckets = {}
         for i in range(NUM_CARDS):
             buckets[i] = 0
-        for c in cards:
-            buckets[c.value] += 1
+        for c in self.Cards:
+            buckets[c.Value] += 1
         return sorted(buckets.items(), key=operator.itemgetter(1))
 
-    def isRoyalFlush(self, cards):
-        if len(cards) < 5 or cards[0].value != 12:
+    def _is_royal_flush(self):
+        if len(self.Cards) < 5 or self.Cards[0].value != 12:
             return None
 
         for i in range(1, 5):
-            if cards[i].value != cards[i-1].value - 1 or cards[i].suit != cards[i-1].suit:
+            if self.Cards[i].value != self.Cards[i-1].value - 1 or self.Cards[i].suit != self.Cards[i-1].suit:
                 return None
 
-        return [10, cards[0].suit]
+        return [10, self.Cards[0].suit]
 
-    def isStraightFlush(self, cards):
-        if len(cards) < 5:
+    def _is_straight_flush(self):
+        if len(self.Cards) < 5:
             return None
 
         for i in range(1, 5):
-            if cards[i].value != cards[i-1].value - 1 or cards[i].suit != cards[i-1].suit:
+            if self.Cards[i].value != self.Cards[i-1].value - 1 or self.Cards[i].suit != self.Cards[i-1].suit:
                 return None
 
-        return [9, cards[0].value, cards[0].suit]
+        return [9, self.Cards[0].value, self.Cards[0].suit]
 
-    def isFourOfAKind(self, cards):
+    def is_four_of_a_kind(self):
 
-        buckets = self.bucketCards(cards)
+        buckets = self._bucket_cards()
         if buckets[-1][1] != 4:
             return None
 
         return [8, buckets[-1][0]]
 
-    def isFullHouse(self, cards):
+    def _is_full_house(self):
 
-        buckets = self.bucketCards(cards)
+        buckets = self._bucket_cards()
         if buckets[-1][1] != 3 or buckets[-2][1] != 2:
             return None
 
         return [7, buckets[-1][0], buckets[-2][0]]
 
-    def isFlush(self, cards):
-        if len(cards) < 5:
+    def _is_flush(self):
+        if len(self.Cards) < 5:
             return None
 
         for i in range(1, 5):
-            if cards[i].suit != cards[i-1].suit:
+            if self.Cards[i].suit != self.Cards[i-1].suit:
                 return None
 
-        return [6, cards[0].value, cards[0].suit]
+        return [6, self.Cards[0].value, self.Cards[0].suit]
 
-    def isStraight(self, cards):
-        if len(cards) < 5:
+    def _is_straight(self):
+        if len(self.Cards) < 5:
             return None
 
         for i in range(1, 5):
-            if cards[i].value != cards[i-1].value - 1:
+            if self.Cards[i].value != self.Cards[i-1].value - 1:
                 return None
 
-        return [5, cards[0].value]
+        return [5, self.Cards[0].value]
 
-    def isThreeOfAKind(self, cards):
+    def _is_three_of_a_kind(self):
 
-        buckets = self.bucketCards(cards)
+        buckets = self._bucket_cards()
         if buckets[-1][1] != 3:
             return None
 
         rank = [4, buckets[-1][0]]
-        if len(cards) >= 4:
+        if len(self.Cards) >= 4:
             rank.append(buckets[-2][0])
-        if len(cards) >= 5:
+        if len(self.Cards) >= 5:
             rank.append(buckets[-3][0])
 
         return rank
 
-    def isTwoPair(self, cards):
+    def _is_two_pair(self):
 
-        buckets = self.bucketCards(cards)
+        buckets = self._bucket_cards()
         if buckets[-1][1] != 2 or buckets[-2][1] != 2:
             return None
 
         rank = [3, buckets[-1][0], buckets[-2][0]]
 
-        if len(cards) >= 5:
+        if len(self.Cards) >= 5:
             rank.append(buckets[-3][0])
 
         return rank
 
-    def isPair(self, cards):
+    def _is_pair(self):
 
-        buckets = self.bucketCards(cards)
+        buckets = self._bucket_cards()
         if buckets[-1][1] != 2:
             return None
 
         rank = [2, buckets[-1][0]]
-        if len(cards) >= 3:
+        if len(self.Cards) >= 3:
             rank.append(buckets[-2][0])
-        if len(cards) >= 4:
+        if len(self.Cards) >= 4:
             rank.append(buckets[-3][0])
-        if len(cards) >= 5:
+        if len(self.Cards) >= 5:
             rank.append(buckets[-4][0])
 
         return rank
 
-    def isHighCard(self, cards):
+    def _is_high_card(self):
 
         rank = [1]
-        for c in cards:
-            rank.append(c.value)
+        for c in self.Cards:
+            rank.append(c.Value)
         return rank
