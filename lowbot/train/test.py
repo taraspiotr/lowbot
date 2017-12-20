@@ -1,5 +1,7 @@
 
-for i, c in enumerate(format(3, '03b')):
+indices = []
+a = 2
+for i, c in enumerate(format(a, '02b')):
     if c == "1":
-        print(i, c)
-
+        indices.append(i)
+print(indices)

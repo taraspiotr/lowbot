@@ -9,7 +9,7 @@ class KuhnTrainer(object):
     def __init__(self, iterations):
         self.PASS = 0
         self.BET = 1
-        self.NUM_CARDS = 2
+        self.NUM_CARDS = 1
         self.nodeMap = {}
         self.iterations = iterations
 
@@ -72,7 +72,7 @@ class KuhnTrainer(object):
 
         try:
             for i in range(iterations):
-                game = Game(num_draws=1, hand_size=2, num_cards=7, cap=2)
+                game = Game(num_draws=1, hand_size=1, num_cards=13, cap=2)
                 util += self.cfr(game, 1, 1)
                 del game
                 print("Iteration {0} / {1}".format(i, iterations))
@@ -123,7 +123,7 @@ class KuhnTrainer(object):
 
             if actions == "d":
                 action = "d"
-                for i, c in enumerate(format(a, '02b')):
+                for i, c in enumerate(format(a, '01b')):
                     if c == "1":
                         indices.append(i)
 
@@ -146,5 +146,5 @@ class KuhnTrainer(object):
     def main(self):
         self.train(self.iterations)
 
-Trainer = KuhnTrainer(int(5))
+Trainer = KuhnTrainer(int(1e9))
 Trainer.main()
