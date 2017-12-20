@@ -7,7 +7,7 @@
 Licenses
 ========
 
-The code which makes up this Python project template is licensed under the MIT/X11 license. Feel free to use it in your free software/open-source or proprietary projects.
+The code which makes up this lowbot project template is licensed under the MIT/X11 license. Feel free to use it in your free software/open-source or proprietary projects.
 
 
 Issues
