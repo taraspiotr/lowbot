@@ -42,5 +42,4 @@ Please report any bugs or requests that you have using the GitHub issue tracker!
 Authors
 =======
 
-* Sean Fisk
-* Benjamin Schwarze
+* Piotr Tarasiewicz
