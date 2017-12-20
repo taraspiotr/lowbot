@@ -1,3 +1,5 @@
 
-a = filter(lambda x: x.isalpha(), "asdf4as3d2fa1sdf")
-print(a.__next__())
+for i, c in enumerate(format(3, '03b')):
+    if c == "1":
+        print(i, c)
+
