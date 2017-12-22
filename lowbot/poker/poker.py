@@ -2,6 +2,7 @@
 
 import numpy as np
 import operator
+from collections import deque
 
 NUM_CARDS = 13
 NUM_SUITS = 4
@@ -39,9 +40,25 @@ class Deck(object):
     def to_string(self):
         s = ""
         for c in self.Cards:
-            s += c.to_string() + ' '
-        return s[0:len(s)-1]
+            s += c.to_string()
+        return s
 
+    def to_string_simplified(self):
+        s = ""
+        for c in self.Cards:
+            s += c.to_string_simplified()
+        return s
+
+    def to_queue(self, simplified=True):
+        if simplified:
+            queue = deque()
+            for c in self.Cards:
+                queue.append(c.to_string_simplified())
+        else:
+            queue = deque()
+            for c in self.Cards:
+                queue.append(c.to_string())
+        return queue
 
 class Hand(object):
 
