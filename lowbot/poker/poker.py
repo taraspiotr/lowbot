@@ -33,7 +33,6 @@ class Deck(object):
             for v in range(num_cards):
                 self.Cards.append(Card(v, s))
 
-
     def shuffle(self, seed=None):
         self.Cards = list(np.random.RandomState(seed=seed).permutation(self.Cards))
 
@@ -42,8 +41,6 @@ class Deck(object):
         for c in self.Cards:
             s += c.to_string() + ' '
         return s[0:len(s)-1]
-
-
 
 
 class Hand(object):
@@ -70,29 +67,29 @@ class Hand(object):
             if self.HandValue[i] > second_hand.HandValue[i]:
                 return 1
             elif self.HandValue[i] < second_hand.HandValue[i]:
-                return -1
-        return 0
+                return 0
+        return 2
 
     def _get_hand_value(self):
 
-        rank = self._is_royal_flush()
-        if rank:
-            return rank
-        rank = self._is_straight_flush()
-        if rank:
-            return rank
+        # rank = self._is_royal_flush()
+        # if rank:
+        #     return rank
+        # rank = self._is_straight_flush()
+        # if rank:
+        #     return rank
         rank = self.is_four_of_a_kind()
         if rank:
             return rank
         rank = self._is_full_house()
         if rank:
             return rank
-        rank = self._is_flush()
-        if rank:
-            return rank
-        rank = self._is_straight()
-        if rank:
-            return rank
+        # rank = self._is_flush()
+        # if rank:
+        #     return rank
+        # rank = self._is_straight()
+        # if rank:
+        #     return rank
         rank = self._is_three_of_a_kind()
         if rank:
             return rank
@@ -218,8 +215,15 @@ class Hand(object):
     def _is_high_card(self):
 
         rank = [1]
-        for c in self.Cards:
-            rank.append(c.Value)
+        flag_ace = True if self.Cards[0].Value == 12 else False
+
+        if flag_ace:
+            for c in self.Cards[1:]:
+                rank.append(c.Value)
+            rank.append(-1)
+        else:
+            for c in self.Cards:
+                rank.append(c.Value)
         return rank
 
 
