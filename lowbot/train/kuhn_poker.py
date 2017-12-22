@@ -1,5 +1,4 @@
 import time
-import progressbar
 import numpy as np
 
 
@@ -63,19 +62,14 @@ class KuhnTrainer(object):
         cards = [i for i in range(13)]
         util = 0.
 
-        bar = progressbar.ProgressBar(maxval=iterations, \
-                                      widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
-        bar.start()
-
         for i in range(iterations):
             cards = np.random.permutation(cards)
             util += self.cfr(cards, "", 1, 1)
-            bar.update(i + 1)
-
+            print("Iteration {0} / {1}".format(i, iterations))
         print("Average game value: {0}, after {1} iterations.".format(util / iterations, iterations))
 
         for n in self.nodeMap.values():
-            print(n.to_string())
+            print(n.toString())
 
 
     def cfr(self, cards, history, p0, p1):
@@ -105,6 +99,12 @@ class KuhnTrainer(object):
             node = self.createNode()
             node.infoSet = infoSet
             self.nodeMap[infoSet] = node
+
+
+        if p0 + p1 < 1e-6:
+
+            print(infoSet, p0, p1)
+            return 0
 
         strategy = node.getStrategy(p0 if player == 0 else p1)
         util = np.zeros(self.NUM_ACTIONS)

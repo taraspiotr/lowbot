@@ -1,7 +1,5 @@
 import random
-from lowbot.poker.game import *
-from lowbot.poker.hands import *
-from lowbot.poker.deck import *
+from train.game import *
 
 my_score = 0.
 game_num = 0
@@ -30,7 +28,7 @@ def get_action(actions, strat):
 
     indices = []
     if actions == "d":
-        for i, c in enumerate(format(a, '01b')):
+        for i, c in enumerate(format(a, '02b')):
             if c == "1":
                 indices.append(i)
         action = "d"
@@ -41,7 +39,7 @@ def get_action(actions, strat):
 
 
 def play_game(position):
-    game = Game(num_draws=1, hand_size=1, num_cards=13, cap=2)
+    game = Game(num_draws=0, hand_size=2, num_cards=13, cap=3, num_suits=4)
     if position == 0:
         print("You're on the SB")
     else:
@@ -50,38 +48,52 @@ def play_game(position):
     score = cfr(game, position)
     print("Your cards are {0}".format(game.Hands[position].to_string()))
     print("Opponent card are {0}".format(game.Hands[1-position].to_string()))
-    print("Your score is {0}".format(score if position == game.get_winner() else -score))
+    print("Your score is {0}".format(score))
     print("")
     return score
 
 
 def cfr(game, position):
+    player = game.get_current_player()
 
     if game.State == TERMINAL:
-        if game.get_winner() == 2:
+        winner = game.get_winner()
+        if winner == 2:
             return 0
+        elif winner == position:
+            return game.Pots[1 - position]
         else:
-            return game.Pots[1 - game.get_winner()]
+            return -game.Pots[position]
 
     actions = game.get_legal_actions()
 
-    if game.get_current_player() == position:
-        action = input("Pick action from: {1} ".format(game.get_current_player(), actions))
+    flag = False
+    if player == position:
+        action = input("Pick action from: {1} ".format(player, actions))
+        # action = actions[random.randint(0, len(actions) - 1)]
+
         indices = []
         if action == "d":
             indices = [int(x) for x in input("Pick cards: ").split()]
+            flag = True
     else:
-        infoSet = str(game.Hands[1-position].to_string_simplified()) + game.History
+        infoSet = game.Hands[1-position].OldCards + str(game.Hands[1-position].to_string_simplified()) + game.History
         strat = strategy[infoSet]
         action, indices = get_action(actions, strat)
-        print("Oppenent picked {0}".format(action))
+        print("Oppenent picked {0} from {1}".format(action, actions))
+        print(strat)
         if action == "d":
-            print(strat)
             print("Opponent picked cards: {0}".format(indices))
 
     game.perform_action(action, indices)
 
+    if flag:
+        print("Your new hand is: {0}".format(game.Hands[player].to_string()))
+
+
     return cfr(game, position)
 
-
-play_game(0)
+while True:
+    game_num += 1
+    my_score += play_game(game_num%2)
+    print("Total score is {0} after {1} games".format(my_score, game_num))

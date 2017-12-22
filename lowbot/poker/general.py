@@ -1,5 +1,50 @@
-from lowbot.poker.deck import *
+#!/usr/bin/env python3
+
+import numpy as np
 import operator
+
+NUM_CARDS = 13
+NUM_SUITS = 4
+H = 1
+L = 2
+HL = 3
+
+
+class Card(object):
+    Values = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
+    Suits = ['c', 'd', 'h', 's']
+
+    def __init__(self, value, suit):
+        self.Value = value
+        self.Suit = suit
+
+    def to_string(self):
+        return self.Values[self.Value] + self.Suits[self.Suit]
+
+    def to_string_simplified(self):
+        return self.Values[self.Value]
+
+
+class Deck(object):
+
+    def __init__(self, num_suits=4, num_cards=13):
+        self.Cards = []
+        for s in range(num_suits):
+            for v in range(num_cards):
+                self.Cards.append(Card(v, s))
+
+
+    def shuffle(self, seed=None):
+        self.Cards = list(np.random.RandomState(seed=seed).permutation(self.Cards))
+
+    def to_string(self):
+        s = ""
+        for c in self.Cards:
+            s += c.to_string() + ' '
+        return s[0:len(s)-1]
+
+
+
 
 class Hand(object):
 
@@ -7,14 +52,6 @@ class Hand(object):
         self.Cards = cards
         self.Cards.sort(key=lambda x: (x.Value, x.Suit), reverse=True)
         self.HandValue = self._get_hand_value()
-        self.Discarded = []
-
-    def draw(self, indices, cards):
-        for e, i in enumerate(indices):
-            self.Discarded.append(self.Cards[i])
-            self.Cards[i] = cards[e]
-
-        self.Cards.sort(key=lambda x: (x.Value, x.Suit), reverse=True)
 
     def to_string(self):
         s = ""

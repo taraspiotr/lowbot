@@ -1,6 +1,4 @@
-from lowbot.poker.deck import *
-from lowbot.poker.hands import *
-from lowbot.poker.game import *
+from train.game import *
 import copy
 
 
@@ -71,8 +69,9 @@ class KuhnTrainer(object):
         util = 0.
 
         try:
+
             for i in range(iterations):
-                game = Game(num_draws=1, hand_size=1, num_cards=13, cap=2)
+                game = Game(num_draws=0, hand_size=2, num_cards=13, cap=3, num_suits=4)
                 util += self.cfr(game, 1, 1)
                 del game
                 print("Iteration {0} / {1}".format(i, iterations))
@@ -97,9 +96,9 @@ class KuhnTrainer(object):
             elif winner == player:
                 return game.Pots[1 - winner]
             else:
-                return -game.Pots[1 - winner]
+                return -game.Pots[winner]
 
-        infoSet = str(game.Hands[player].to_string_simplified()) + game.History
+        infoSet = game.Hands[player].OldCards + str(game.Hands[player].to_string_simplified()) + game.History
         actions = game.get_legal_actions()
 
         if infoSet in self.nodeMap.keys():
@@ -113,7 +112,11 @@ class KuhnTrainer(object):
             #     print(node.toString())
             #     print(node.NUM_ACTIONS)
 
-        strategy = node.getStrategy(p0 if player == 0 else p1)
+        weight = p0 if player == 0 else p1
+        # if p0 + p1 < 1e-6:
+        #     node.counter -= 1e6
+
+        strategy = node.getStrategy(weight)
         util = np.zeros(node.NUM_ACTIONS)
         nodeUtil = 0.
 
@@ -131,7 +134,18 @@ class KuhnTrainer(object):
                 action = actions[a]
 
             #print("Action = {0}, indices = {1}".format(action, indices))
+            # print("\nPre action:")
+            # print("\tHistory:\t{0}".format(game_copy.History))
+            # print("\tHand 0: \t{0}".format(game_copy.Hands[0].to_string()))
+            # print("\tHand 1: \t{0}".format(game_copy.Hands[1].to_string()))
+            # print("\tState:  \t{0}".format(game_copy.State))
+            # print("\tACTION: \t{0}, {1}".format(action, indices))
             game_copy.perform_action(action, indices)
+            # print("Post action:")
+            # print("\tHistory:\t{0}".format(game_copy.History))
+            # print("\tHand 0: \t{0}".format(game_copy.Hands[0].to_string()))
+            # print("\tHand 1: \t{0}".format(game_copy.Hands[1].to_string()))
+            # print("\tState:  \t{0}".format(game_copy.State))
 
             util[a] = -self.cfr(game_copy, p0 * strategy[a], p1) if player == 0 else -self.cfr(game_copy, p0, p1 * strategy[a])
             nodeUtil += strategy[a] * util[a]
@@ -142,6 +156,8 @@ class KuhnTrainer(object):
             node.regretSum[a] += (p1 if player == 0 else p0) * regret
 
         return nodeUtil
+
+
 
     def main(self):
         self.train(self.iterations)
