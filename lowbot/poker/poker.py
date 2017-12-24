@@ -62,7 +62,8 @@ class Deck(object):
 
 class Hand(object):
 
-    def __init__(self, cards):
+    def __init__(self, cards, game):
+        self.Game = game
         self.Cards = cards
         self.Cards.sort(key=lambda x: (x.Value, x.Suit), reverse=True)
         self.HandValue = self._get_hand_value()
@@ -104,9 +105,10 @@ class Hand(object):
         # rank = self._is_flush()
         # if rank:
         #     return rank
-        # rank = self._is_straight()
-        # if rank:
-        #     return rank
+        if self.game == "DRAW":
+            rank = self._is_straight()
+            if rank:
+                return rank
         rank = self._is_three_of_a_kind()
         if rank:
             return rank
@@ -232,7 +234,10 @@ class Hand(object):
     def _is_high_card(self):
 
         rank = [1]
-        flag_ace = True if self.Cards[0].Value == 12 else False
+        flag_ace = False
+
+        if self.Game == "RAZZ":
+            flag_ace = True if self.Cards[0].Value == 12 else False
 
         if flag_ace:
             for c in self.Cards[1:]:

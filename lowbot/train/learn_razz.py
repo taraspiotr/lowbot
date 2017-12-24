@@ -1,4 +1,4 @@
-import time
+import timeit
 import numpy as np
 from lowbot.poker import poker
 from lowbot.poker import razz
@@ -59,21 +59,30 @@ class KuhnTrainer(object):
             return avgStrategy
 
         def toString(self):
-            return str.format("{0}:   \t[{1:.0f}%  \t{2:.0f}%]", self.infoSet, self.getAverageStrategy()[0]*100, self.getAverageStrategy()[1]*100)
+            return str.format("{0}:\t{1}", self.infoSet, self.getAverageStrategy())
+
+        def toCSV(self):
+            return str.format("{0},{1}", self.infoSet, ",".join(map(str, self.getAverageStrategy())))
 
     def train(self, iterations):
         deck = poker.Deck()
         util = 0.
 
-        for i in range(iterations):
-            deck.shuffle()
-            cards = deck.to_string_simplified()
-            util += self.cfr(cards, "(" + cards[4:6] + ")", 1, 1)
-            print("Iteration {0} / {1}".format(i, iterations))
+        try:
+            for i in range(iterations):
+                deck.shuffle()
+                cards = deck.to_string_simplified()
+                util += self.cfr(cards, "(" + cards[4:6] + ")", 1, 1)
+                print("Iteration {0} / {1}".format(i, iterations))
+        except KeyboardInterrupt:
+            pass
+
         print("Average game value: {0}, after {1} iterations.".format(util / iterations, iterations))
 
-        for n in self.nodeMap.values():
-            print(n.toString())
+        with open("strategy.csv", "w") as f:
+            for n in self.nodeMap.values():
+                # print(n.toString())
+                f.write(n.toCSV() + "\n")
 
     def cfr(self, cards, history, p0, p1):
         player = razz.get_current_player(history)
@@ -139,5 +148,8 @@ class KuhnTrainer(object):
     def main(self):
         self.train(self.iterations)
 
-Trainer = KuhnTrainer(100)
+start = timeit.default_timer()
+Trainer = KuhnTrainer(1000000000)
 Trainer.main()
+stop = timeit.default_timer()
+print("Time: {}".format(stop-start))
