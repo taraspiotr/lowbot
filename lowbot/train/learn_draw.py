@@ -1,7 +1,7 @@
 import time
 import numpy as np
 from lowbot.poker import poker
-from lowbot.poker import razz
+from lowbot.poker import draw
 
 
 class KuhnTrainer(object):
@@ -68,42 +68,41 @@ class KuhnTrainer(object):
         for i in range(iterations):
             deck.shuffle()
             cards = deck.to_string_simplified()
-            util += self.cfr(cards, "(" + cards[4:6] + ")", 1, 1)
+            util += self.cfr(cards, "r", [draw.sort_cards(cards[0:draw.NUM_CARDS]), cards[draw.NUM_CARDS:2*draw.NUM_CARDS]], 1, 1)
             print("Iteration {0} / {1}".format(i, iterations))
         print("Average game value: {0}, after {1} iterations.".format(util / iterations, iterations))
 
         for n in self.nodeMap.values():
             print(n.toString())
 
-    def cfr(self, cards, history, p0, p1):
-        player = razz.get_current_player(history)
+    def cfr(self, cards, history, hands, p0, p1):
+        player = draw.get_current_player(history)
         opponent = 1 - player
 
-        actions = razz.get_legal_actions(history)
-        hands = razz.get_private_hands(history, cards)
+        actions = draw.get_legal_actions(history)
 
         # print(history)
         # print(actions)
         # print("")
 
-        if actions == razz.TERMINAL_FOLD:
-            return razz.get_pot_contribution(history, opponent)
+        if actions == draw.TERMINAL_FOLD:
+            return draw.get_pot_contribution(history, opponent)
 
-        if actions == razz.TERMINAL_CALL:
-            outcome = razz.compare_final_hands(history, hands[player], hands[opponent])
+        if actions == draw.TERMINAL_CALL:
+            outcome = draw.compare_hands(hands[player], hands[opponent])
             if outcome == 0:
-                return razz.get_pot_contribution(history, 0)
+                return draw.get_pot_contribution(history, 0)
             if outcome == 1:
-                return -razz.get_pot_contribution(history, 0)
+                return -draw.get_pot_contribution(history, 0)
             if outcome == 2:
                 return 0
 
-        if actions == razz.DRAW:
-            history += "(" + razz.get_draw_cards(history, cards) + ")"
-            return self.cfr(cards, history, p0, p1)
-        if actions == razz.DRAW_FACE_DOWN:
-            history += "()"
-            return self.cfr(cards, history, p0, p1)
+        # if actions == razz.DRAW:
+        #     history += "(" + razz.get_draw_cards(history, cards) + ")"
+        #     return self.cfr(cards, history, p0, p1)
+        # if actions == razz.DRAW_FACE_DOWN:
+        #     history += "()"
+        #     return self.cfr(cards, history, p0, p1)
 
         infoSet = hands[player] + history
 
@@ -111,7 +110,10 @@ class KuhnTrainer(object):
         if infoSet in self.nodeMap.keys():
             node = self.nodeMap[infoSet]
         else:
-            node = self.createNode(len(actions), actions)
+            if actions == draw.DRAW or actions == draw.LAST_DRAW:
+                node = self.createNode(2**draw.NUM_CARDS, actions)
+            else:
+                node = self.createNode(len(actions), actions)
             node.infoSet = infoSet
             self.nodeMap[infoSet] = node
 
@@ -126,8 +128,15 @@ class KuhnTrainer(object):
         nodeUtil = 0.
 
         for a in range(node.NUM_ACTIONS):
-            nextHistory = history + node.actions[a]
-            util[a] = -self.cfr(cards, nextHistory, p0 * strategy[a], p1) if player == 0 else -self.cfr(cards, nextHistory, p0, p1 * strategy[a])
+            if actions == draw.DRAW or actions == draw.LAST_DRAW:
+                num_drawed, hands[player] = draw.draw_cards(history, cards, hands[player], a)
+                if actions == draw.DRAW:
+                    nextHistory = history + "(" + str(num_drawed)
+                else:
+                    nextHistory = history + str(num_drawed) + ")"
+            else:
+                nextHistory = history + node.actions[a]
+            util[a] = -self.cfr(cards, nextHistory, hands, p0 * strategy[a], p1) if player == 0 else -self.cfr(cards, nextHistory, hands, p0, p1 * strategy[a])
             nodeUtil += strategy[a] * util[a]
 
         for a in range(node.NUM_ACTIONS):
@@ -139,5 +148,5 @@ class KuhnTrainer(object):
     def main(self):
         self.train(self.iterations)
 
-Trainer = KuhnTrainer(100)
+Trainer = KuhnTrainer(10)
 Trainer.main()
