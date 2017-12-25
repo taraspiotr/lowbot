@@ -59,25 +59,39 @@ class KuhnTrainer(object):
             return avgStrategy
 
         def toString(self):
-            return str.format("{0}:   \t[{1:.0f}%  \t{2:.0f}%]", self.infoSet, self.getAverageStrategy()[0]*100, self.getAverageStrategy()[1]*100)
+            return str.format("{0}:\t{1}", self.infoSet, self.getAverageStrategy())
+
+        def toCSV(self):
+            return str.format("{0},{1}", self.infoSet, ",".join(map(str, self.getAverageStrategy())))
 
     def train(self, iterations):
         deck = poker.Deck()
         util = 0.
 
-        for i in range(iterations):
-            deck.shuffle()
-            cards = deck.to_string_simplified()
-            util += self.cfr(cards, "r", [draw.sort_cards(cards[0:draw.NUM_CARDS]), cards[draw.NUM_CARDS:2*draw.NUM_CARDS]], 1, 1)
-            print("Iteration {0} / {1}".format(i, iterations))
+        try:
+            for i in range(iterations):
+                deck.shuffle()
+                cards = deck.to_string_simplified()
+                hand_one = draw.sort_cards(cards[0:draw.NUM_CARDS])
+                hand_two = draw.sort_cards(cards[draw.NUM_CARDS:2 * draw.NUM_CARDS])
+                util += self.cfr(cards, "r", hand_one, hand_two, 1, 1)
+                print("Iteration {0} / {1}".format(i, iterations))
+        except KeyboardInterrupt:
+            pass
+
         print("Average game value: {0}, after {1} iterations.".format(util / iterations, iterations))
 
-        for n in self.nodeMap.values():
-            print(n.toString())
+        with open("strategy.csv", "w") as f:
+            for n in self.nodeMap.values():
+                # print(n.toString())
+                f.write(n.toCSV() + "\n")
 
-    def cfr(self, cards, history, hands, p0, p1):
+    def cfr(self, cards, history, hand_one, hand_two, p0, p1):
+        # print("\t", history)
         player = draw.get_current_player(history)
         opponent = 1 - player
+        player_hand = hand_one if player == 0 else hand_two
+        opponent_hand = hand_one if opponent == 0 else hand_two
 
         actions = draw.get_legal_actions(history)
 
@@ -89,7 +103,7 @@ class KuhnTrainer(object):
             return draw.get_pot_contribution(history, opponent)
 
         if actions == draw.TERMINAL_CALL:
-            outcome = draw.compare_hands(hands[player], hands[opponent])
+            outcome = draw.compare_hands(player_hand, opponent_hand)
             if outcome == 0:
                 return draw.get_pot_contribution(history, 0)
             if outcome == 1:
@@ -104,7 +118,7 @@ class KuhnTrainer(object):
         #     history += "()"
         #     return self.cfr(cards, history, p0, p1)
 
-        infoSet = hands[player] + history
+        infoSet = player_hand + history
 
         node = None
         if infoSet in self.nodeMap.keys():
@@ -129,14 +143,15 @@ class KuhnTrainer(object):
 
         for a in range(node.NUM_ACTIONS):
             if actions == draw.DRAW or actions == draw.LAST_DRAW:
-                num_drawed, hands[player] = draw.draw_cards(history, cards, hands[player], a)
+                num_drawed, new_hand = draw.draw_cards(history, cards, player_hand, a)
                 if actions == draw.DRAW:
                     nextHistory = history + "(" + str(num_drawed)
                 else:
                     nextHistory = history + str(num_drawed) + ")"
             else:
                 nextHistory = history + node.actions[a]
-            util[a] = -self.cfr(cards, nextHistory, hands, p0 * strategy[a], p1) if player == 0 else -self.cfr(cards, nextHistory, hands, p0, p1 * strategy[a])
+                new_hand = player_hand
+            util[a] = -self.cfr(cards, nextHistory, new_hand, opponent_hand, p0 * strategy[a], p1) if player == 0 else -self.cfr(cards, nextHistory, opponent_hand, new_hand, p0, p1 * strategy[a])
             nodeUtil += strategy[a] * util[a]
 
         for a in range(node.NUM_ACTIONS):
@@ -148,5 +163,5 @@ class KuhnTrainer(object):
     def main(self):
         self.train(self.iterations)
 
-Trainer = KuhnTrainer(10)
+Trainer = KuhnTrainer(1000)
 Trainer.main()

@@ -20,7 +20,7 @@ BIG_BET = 2
 
 def get_legal_actions(history):
     rounds = re.findall(r'([^[\)]+)(?:$|\()', history)
-    draws = re.findall(r'([^[\(]+)(?:$|\))', history)
+    draws = re.findall('\(([^)]+)', history)
 
     if len(history) == 0 or history[-1] == ")":
         return "fcr"
@@ -83,20 +83,21 @@ def sort_cards(hand):
     hand = [VALUES[s] for s in hand]
     hand.sort(reverse=True)
     hand = "".join([VALUE_SIGNS[a] for a in hand])
+    # print(hand)
     return hand
 
 
 def draw_cards(history, cards, hand, action):
-    draws = re.findall(r'([^[\(]+)(?:$|\))', history)
+    # draws = re.findall(r'([^[\(]+)(?:$|\))', history)
     draws = re.findall('\(([^)]+)', history)
     p = 2*NUM_CARDS
-    print(history, draws)
+    # print("OLD", hand)
     for s in "".join(draws):
         p += int(s)
 
     action = format(action, '0' + str(NUM_CARDS) + 'b')
-    hand_old = hand[:-5]
-    hand_last = hand[-5:]
+    hand_old = hand[:-NUM_CARDS]
+    hand_last = hand[-NUM_CARDS:]
 
     hand_new = ""
     hand = ""
@@ -112,6 +113,7 @@ def draw_cards(history, cards, hand, action):
 
     hand_new = sort_cards(hand_new)
     hand = hand_old + hand + hand_new
+    # print("NEW", hand)
 
     return action.count("1"), hand
 
