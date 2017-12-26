@@ -1,7 +1,7 @@
-import time
+import timeit
 import numpy as np
 from lowbot.poker import poker
-from lowbot.poker import razz
+from lowbot.poker import draw
 
 
 class KuhnTrainer(object):
@@ -59,59 +59,90 @@ class KuhnTrainer(object):
             return avgStrategy
 
         def toString(self):
-            return str.format("{0}:   \t[{1:.0f}%  \t{2:.0f}%]", self.infoSet, self.getAverageStrategy()[0]*100, self.getAverageStrategy()[1]*100)
+            return str.format("{0}:\t{1}", self.infoSet, self.getAverageStrategy())
+
+        def toCSV(self):
+            return str.format("{0},{1}", self.infoSet, ",".join(map(str, self.getAverageStrategy())))
 
     def train(self, iterations):
-        deck = poker.Deck()
+        deck = poker.Deck(num_cards=5)
         util = 0.
 
-        for i in range(iterations):
-            deck.shuffle()
-            cards = deck.to_string_simplified()
-            util += self.cfr(cards, "(" + cards[4:6] + ")", 1, 1)
-            print("Iteration {0} / {1}".format(i, iterations))
+        try:
+            for i in range(iterations):
+                deck.shuffle()
+                cards = deck.to_string_simplified()
+                # cards="32452635"
+                hand_one = draw.sort_cards(cards[0:draw.NUM_CARDS])
+                hand_two = draw.sort_cards(cards[draw.NUM_CARDS:2 * draw.NUM_CARDS])
+                util += self.cfr(cards, "r", hand_one, hand_two, 1, 1)
+                print("Iteration {0} / {1}".format(i, iterations))
+                if i % 250000 == 0:
+                    self.save_to_file("strategy_" + str(i / 250000) + ".csv")
+        except KeyboardInterrupt:
+            pass
+
         print("Average game value: {0}, after {1} iterations.".format(util / iterations, iterations))
 
-        for n in self.nodeMap.values():
-            print(n.toString())
+        self.save_to_file("strategy.csv")
 
-    def cfr(self, cards, history, p0, p1):
-        player = razz.get_current_player(history)
+
+    def save_to_file(self, name):
+        with open(name, "w") as f:
+            for n in self.nodeMap.values():
+                # print(n.toString())
+                f.write(n.toCSV() + "\n")
+
+    def cfr(self, cards, history, hand_one, hand_two, p0, p1):
+        # print(history, hand_one, hand_two, p0, p1)
+        # print("\t", history)
+        player = draw.get_current_player(history)
         opponent = 1 - player
+        player_hand = hand_one if player == 0 else hand_two
+        opponent_hand = hand_one if opponent == 0 else hand_two
 
-        actions = razz.get_legal_actions(history)
-        hands = razz.get_private_hands(history, cards)
+        actions = draw.get_legal_actions(history)
 
         # print(history)
         # print(actions)
         # print("")
 
-        if actions == razz.TERMINAL_FOLD:
-            return razz.get_pot_contribution(history, opponent)
+        if actions == draw.TERMINAL_FOLD:
+            # print("History: {0}\tPlayer {1} wins: {2}\tHands: {3}, {4}".format(history, player, draw.get_pot_contribution(history, opponent), hand_one, hand_two))
+            return draw.get_pot_contribution(history, opponent)
 
-        if actions == razz.TERMINAL_CALL:
-            outcome = razz.compare_final_hands(history, hands[player], hands[opponent])
+        if actions == draw.TERMINAL_CALL:
+            outcome = draw.compare_hands(player_hand, opponent_hand)
+            # print("\t", player, player_hand, opponent_hand, outcome)
             if outcome == 0:
-                return razz.get_pot_contribution(history, 0)
+                # print("History: {0}\tPlayer {1} wins: {2}\tHands: {3}, {4}".format(history, player, draw.get_pot_contribution(history, 0), hand_one, hand_two))
+                return draw.get_pot_contribution(history, 0)
             if outcome == 1:
-                return -razz.get_pot_contribution(history, 0)
+                # print("History: {0}\tPlayer {1} wins: {2}\tHands: {3}, {4}".format(history, opponent, draw.get_pot_contribution(history, 0), hand_one, hand_two))
+                return -draw.get_pot_contribution(history, 0)
             if outcome == 2:
+                # print("History: {0}\tDraw\tHands: {1}, {2}".format(history, hand_one, hand_two))
                 return 0
 
-        if actions == razz.DRAW:
-            history += "(" + razz.get_draw_cards(history, cards) + ")"
-            return self.cfr(cards, history, p0, p1)
-        if actions == razz.DRAW_FACE_DOWN:
-            history += "()"
-            return self.cfr(cards, history, p0, p1)
 
-        infoSet = hands[player] + history
+        # if actions == razz.DRAW:
+        #     history += "(" + razz.get_draw_cards(history, cards) + ")"
+        #     return self.cfr(cards, history, p0, p1)
+        # if actions == razz.DRAW_FACE_DOWN:
+        #     history += "()"
+        #     return self.cfr(cards, history, p0, p1)
 
-        node = None
+        # infoSet = player_hand + history
+
+        infoSet = draw.create_info_set(history, player_hand)
+
         if infoSet in self.nodeMap.keys():
             node = self.nodeMap[infoSet]
         else:
-            node = self.createNode(len(actions), actions)
+            if actions == draw.DRAW or actions == draw.LAST_DRAW:
+                node = self.createNode(2**draw.NUM_CARDS, actions)
+            else:
+                node = self.createNode(len(actions), actions)
             node.infoSet = infoSet
             self.nodeMap[infoSet] = node
 
@@ -126,8 +157,20 @@ class KuhnTrainer(object):
         nodeUtil = 0.
 
         for a in range(node.NUM_ACTIONS):
-            nextHistory = history + node.actions[a]
-            util[a] = -self.cfr(cards, nextHistory, p0 * strategy[a], p1) if player == 0 else -self.cfr(cards, nextHistory, p0, p1 * strategy[a])
+            if actions == draw.DRAW or actions == draw.LAST_DRAW:
+                num_drawed, new_hand = draw.draw_cards(history, cards, player_hand, a)
+                if actions == draw.DRAW:
+                    nextHistory = history + "(" + str(num_drawed)
+                else:
+                    nextHistory = history + str(num_drawed) + ")"
+            else:
+                nextHistory = history + node.actions[a]
+                new_hand = player_hand
+            util[a] = -self.cfr(cards, nextHistory, new_hand, opponent_hand, p0 * strategy[a], p1) if player == 0 else -self.cfr(cards, nextHistory, opponent_hand, new_hand, p0, p1 * strategy[a])
+            if draw.get_current_player(history) == draw.get_current_player(nextHistory):
+                util[a] = -util[a]
+            # if history == "rcc(00)r":
+            #     print("maain layer")
             nodeUtil += strategy[a] * util[a]
 
         for a in range(node.NUM_ACTIONS):
@@ -139,5 +182,8 @@ class KuhnTrainer(object):
     def main(self):
         self.train(self.iterations)
 
-Trainer = KuhnTrainer(100)
+start = timeit.default_timer()
+Trainer = KuhnTrainer(1000000000)
 Trainer.main()
+stop = timeit.default_timer()
+print("Time: {}".format(stop-start))

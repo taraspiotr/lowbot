@@ -1,21 +1,15 @@
 
-from collections import deque
-
-q = deque()
-
-q.append(1)
-q.append(2)
-q.append(3)
-q.append(4)
-q.append(5)
-q.append(6)
 
 def one(q):
-    print("A: ", q.pop())
-    two(q)
-    two(q)
+    print(q)
+    print(two(q))
+    print(two(q))
+    print(two(q))
+    print(two(q))
+
 
 def two(q):
-    print(q.pop())
+    q = [q[0] + "a", q[1]]
+    return q
 
-one(q)
+one(["s", "b"])

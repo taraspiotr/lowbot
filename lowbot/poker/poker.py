@@ -105,7 +105,7 @@ class Hand(object):
         # rank = self._is_flush()
         # if rank:
         #     return rank
-        if self.game == "DRAW":
+        if self.Game == "DRAW":
             rank = self._is_straight()
             if rank:
                 return rank
