@@ -65,12 +65,12 @@ class KuhnTrainer(object):
             return str.format("{0},{1}", self.infoSet, ",".join(map(str, self.getAverageStrategy())))
 
     def train(self, iterations):
-        deck = poker.Deck(num_cards=5)
+        deck = poker.Deck(num_cards=3)
         util = 0.
 
         try:
             for i in range(iterations):
-                deck.shuffle()
+                deck.shuffle(seed=i)
                 cards = deck.to_string_simplified()
                 # cards="32452635"
                 hand_one = draw.sort_cards(cards[0:draw.NUM_CARDS])
@@ -94,9 +94,15 @@ class KuhnTrainer(object):
                 f.write(n.toCSV() + "\n")
 
     def cfr(self, cards, history, hand_one, hand_two, p0, p1):
+        # if history == "r" and hand_one == "2":
+        #     print("HAHAHA")
         # print(history, hand_one, hand_two, p0, p1)
         # print("\t", history)
         player = draw.get_current_player(history)
+
+        if p0 < 1e-5 and p1 < 1e-5:
+            return 0
+
         opponent = 1 - player
         player_hand = hand_one if player == 0 else hand_two
         opponent_hand = hand_one if opponent == 0 else hand_two

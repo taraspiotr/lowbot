@@ -13,7 +13,7 @@ ONGOING = "ONGOING"
 CAP = 2
 NUM_DRAWS = 1
 SB_ROUNDS = 2
-NUM_CARDS = 2
+NUM_CARDS = 1
 SMALL_BET = 1
 BIG_BET = 2
 
@@ -121,6 +121,8 @@ def get_pot_contribution(history, player):
     rounds = re.findall(r'([^[\)]+)(?:$|\()', history)
     if len(rounds) == 1 and rounds[0] == "rf" and player == 0:
         return SMALL_BET / 2
+    if len(rounds) == 1 and rounds[0] == "rcf" and player == 1:
+        return SMALL_BET
 
     pot = 0
 
@@ -165,3 +167,4 @@ def create_info_set(history, hand):
 # print(get_pot_contribution("rf", 0))
 # print(get_legal_actions("rf"))
 # print(get_current_player("rf"))
+print(get_pot_contribution("rcrc", 0))
